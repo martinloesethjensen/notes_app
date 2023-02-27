@@ -11,6 +11,8 @@ class Note {
 
   String content = '';
 
+  DateTime dateTime = DateTime.now().toUtc();
+
   @enumerated
   NoteStatus status = NoteStatus.unarchived;
 

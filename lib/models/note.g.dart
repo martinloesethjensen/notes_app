@@ -22,14 +22,19 @@ const NoteSchema = CollectionSchema(
       name: r'content',
       type: IsarType.string,
     ),
-    r'status': PropertySchema(
+    r'dateTime': PropertySchema(
       id: 1,
+      name: r'dateTime',
+      type: IsarType.dateTime,
+    ),
+    r'status': PropertySchema(
+      id: 2,
       name: r'status',
       type: IsarType.byte,
       enumMap: _NotestatusEnumValueMap,
     ),
     r'title': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'title',
       type: IsarType.string,
     )
@@ -73,8 +78,9 @@ void _noteSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeString(offsets[0], object.content);
-  writer.writeByte(offsets[1], object.status.index);
-  writer.writeString(offsets[2], object.title);
+  writer.writeDateTime(offsets[1], object.dateTime);
+  writer.writeByte(offsets[2], object.status.index);
+  writer.writeString(offsets[3], object.title);
 }
 
 Note _noteDeserialize(
@@ -85,10 +91,11 @@ Note _noteDeserialize(
 ) {
   final object = Note();
   object.content = reader.readString(offsets[0]);
+  object.dateTime = reader.readDateTime(offsets[1]);
   object.id = id;
-  object.status = _NotestatusValueEnumMap[reader.readByteOrNull(offsets[1])] ??
+  object.status = _NotestatusValueEnumMap[reader.readByteOrNull(offsets[2])] ??
       NoteStatus.archived;
-  object.title = reader.readString(offsets[2]);
+  object.title = reader.readString(offsets[3]);
   return object;
 }
 
@@ -102,9 +109,11 @@ P _noteDeserializeProp<P>(
     case 0:
       return (reader.readString(offset)) as P;
     case 1:
+      return (reader.readDateTime(offset)) as P;
+    case 2:
       return (_NotestatusValueEnumMap[reader.readByteOrNull(offset)] ??
           NoteStatus.archived) as P;
-    case 2:
+    case 3:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -333,6 +342,59 @@ extension NoteQueryFilter on QueryBuilder<Note, Note, QFilterCondition> {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'content',
         value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Note, Note, QAfterFilterCondition> dateTimeEqualTo(
+      DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'dateTime',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Note, Note, QAfterFilterCondition> dateTimeGreaterThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'dateTime',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Note, Note, QAfterFilterCondition> dateTimeLessThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'dateTime',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Note, Note, QAfterFilterCondition> dateTimeBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'dateTime',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
       ));
     });
   }
@@ -643,6 +705,18 @@ extension NoteQuerySortBy on QueryBuilder<Note, Note, QSortBy> {
     });
   }
 
+  QueryBuilder<Note, Note, QAfterSortBy> sortByDateTime() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'dateTime', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Note, Note, QAfterSortBy> sortByDateTimeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'dateTime', Sort.desc);
+    });
+  }
+
   QueryBuilder<Note, Note, QAfterSortBy> sortByStatus() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'status', Sort.asc);
@@ -678,6 +752,18 @@ extension NoteQuerySortThenBy on QueryBuilder<Note, Note, QSortThenBy> {
   QueryBuilder<Note, Note, QAfterSortBy> thenByContentDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'content', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Note, Note, QAfterSortBy> thenByDateTime() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'dateTime', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Note, Note, QAfterSortBy> thenByDateTimeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'dateTime', Sort.desc);
     });
   }
 
@@ -726,6 +812,12 @@ extension NoteQueryWhereDistinct on QueryBuilder<Note, Note, QDistinct> {
     });
   }
 
+  QueryBuilder<Note, Note, QDistinct> distinctByDateTime() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'dateTime');
+    });
+  }
+
   QueryBuilder<Note, Note, QDistinct> distinctByStatus() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'status');
@@ -750,6 +842,12 @@ extension NoteQueryProperty on QueryBuilder<Note, Note, QQueryProperty> {
   QueryBuilder<Note, String, QQueryOperations> contentProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'content');
+    });
+  }
+
+  QueryBuilder<Note, DateTime, QQueryOperations> dateTimeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'dateTime');
     });
   }
 
