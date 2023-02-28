@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:notes_app/models/note.dart';
@@ -8,15 +6,15 @@ import 'package:notes_app/widgets/note_card.dart';
 
 final notesSearchPod =
     StreamProvider.family<List<Note>, String>((ref, query) async* {
-  final isar = await ref.watch(notesServicePod.future);
-  await for (final note in isar.search(query)) {
+  final service = await ref.watch(notesServicePod.future);
+  await for (final note in service.search(query)) {
     yield note;
   }
 });
 
 final recentSearchesPod = StreamProvider((ref) async* {
-  final isar = await ref.watch(notesServicePod.future);
-  await for (final search in isar.recentSearches()) {
+  final service = await ref.watch(notesServicePod.future);
+  await for (final search in service.recentSearches()) {
     yield search;
   }
 });
@@ -97,12 +95,10 @@ class NotesSearchDelegate extends SearchDelegate<List<NoteCard>?> {
                         onTap: () => query = search.query,
                         trailing: IconButton(
                           icon: const Icon(Icons.delete),
-                          onPressed: () async {
-                            await ref
-                                .read(notesServicePod)
-                                .valueOrNull
-                                ?.removeSearch(search.id);
-                          },
+                          onPressed: () async => await ref
+                              .read(notesServicePod)
+                              .valueOrNull
+                              ?.removeSearch(search.id),
                         ),
                       ),
                     )
