@@ -1,5 +1,6 @@
 import 'package:isar/isar.dart';
 import 'package:notes_app/models/note.dart';
+import 'package:notes_app/models/search.dart';
 import 'package:notes_app/models/tag.dart';
 
 class NotesService {
@@ -7,13 +8,46 @@ class NotesService {
 
   final Isar isar;
 
-  Stream<List<Note>> search(String query, [List<Tag> tags = const <Tag>[]]) {
+  Stream<List<Note>> search(
+    String query, [
+    NoteStatus status = NoteStatus.unarchived,
+  ]) {
     return isar.notes
         .filter()
         .titleContains(query, caseSensitive: false)
         .or()
         .contentContains(query, caseSensitive: false)
+        .or()
+        .tags((tag) => tag.nameContains(query))
+        .sortByDateTime()
         .watch(fireImmediately: true);
+  }
+
+  Stream<List<Search>> recentSearches() {
+    return isar.searches
+        .filter()
+        .queryIsNotEmpty()
+        .sortByDateTime()
+        .watch(fireImmediately: true);
+  }
+
+  Future<bool> hasSearch(String query) async {
+    final count = await isar.searches
+        .filter()
+        .queryEqualTo(query, caseSensitive: false)
+        .count();
+    return count >= 1;
+  }
+
+  Future<void> saveSearch(String query) async {
+    final search = Search()..query = query;
+    if (!await hasSearch(query)) {
+      isar.writeTxnSync(() => isar.searches.putSync(search));
+    }
+  }
+
+  Future<bool> removeSearch(int id) {
+    return isar.writeTxn(() => isar.searches.delete(id));
   }
 
   Future<Note?> getNoteById(int id) {
